@@ -471,7 +471,9 @@ type p struct {
 	goidcache    uint64
 	goidcacheend uint64
 
+
 	// Queue of runnable goroutines. Accessed without lock.
+	//调度器维护的可运行协程队列
 	runqhead uint32
 	runqtail uint32
 	runq     [256]guintptr

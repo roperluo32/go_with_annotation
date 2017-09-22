@@ -252,6 +252,7 @@ func forcegchelper() {
 // Gosched yields the processor, allowing other goroutines to run. It does not
 // suspend the current goroutine, so execution resumes automatically.
 //go:nosplit
+//开始协程G调度
 func Gosched() {
 	mcall(gosched_m)
 }
@@ -2209,7 +2210,9 @@ func injectglist(glist *g) {
 
 // One round of scheduler: find a runnable goroutine and execute it.
 // Never returns.
+//找到一个可以运行的协程G并运行
 func schedule() {
+	//获取当前运行的协程G
 	_g_ := getg()
 
 	if _g_.m.locks != 0 {
@@ -2239,6 +2242,8 @@ top:
 			traceGoUnpark(gp, 0)
 		}
 	}
+
+	//看起来是寻找可以运行的GC垃圾回收器，垃圾回收器也是以一个协程形式来运行
 	if gp == nil && gcBlackenEnabled != 0 {
 		gp = gcController.findRunnableGCWorker(_g_.m.p.ptr())
 	}
@@ -4206,11 +4211,13 @@ func globrunqputbatch(ghead *g, gtail *g, n int32) {
 
 // Try get a batch of G's from the global runnable queue.
 // Sched must be locked.
+//从sched维护的全局可运行协程G中获取一些协程G到调度器P上面来
 func globrunqget(_p_ *p, max int32) *g {
 	if sched.runqsize == 0 {
 		return nil
 	}
 
+	//平均将协程分配到maxprocs个调度器上面
 	n := sched.runqsize/gomaxprocs + 1
 	if n > sched.runqsize {
 		n = sched.runqsize
@@ -4227,9 +4234,12 @@ func globrunqget(_p_ *p, max int32) *g {
 		sched.runqtail = 0
 	}
 
+	//获取全局协程队列的队首元素作为返回元素
 	gp := sched.runqhead.ptr()
 	sched.runqhead = gp.schedlink
 	n--
+
+	//接下来从全局协程队列中取下n个元素，放入调度器P的队列
 	for ; n > 0; n-- {
 		gp1 := sched.runqhead.ptr()
 		sched.runqhead = gp1.schedlink
